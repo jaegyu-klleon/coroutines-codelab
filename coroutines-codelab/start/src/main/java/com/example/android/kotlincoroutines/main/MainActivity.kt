@@ -26,9 +26,6 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.android.kotlincoroutines.R
 import com.google.android.material.snackbar.Snackbar
 
-/**
- * Show layout.activity_main and setup data binding.
- */
 class MainActivity : AppCompatActivity() {
 
     /**
@@ -48,7 +45,7 @@ class MainActivity : AppCompatActivity() {
         val database = getDatabase(this)
         val repository = TitleRepository(getNetworkService(), database.titleDao)
         val viewModel = ViewModelProvider(this, MainViewModel.FACTORY(repository))
-                .get(MainViewModel::class.java)
+            .get(MainViewModel::class.java)
 
         // When rootLayout is clicked call onMainViewClicked in ViewModel
         rootLayout.setOnClickListener {

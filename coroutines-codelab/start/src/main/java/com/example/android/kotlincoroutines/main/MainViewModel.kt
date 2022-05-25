@@ -16,11 +16,15 @@
 
 package com.example.android.kotlincoroutines.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.android.kotlincoroutines.util.BACKGROUND
+import androidx.lifecycle.viewModelScope
 import com.example.android.kotlincoroutines.util.singleArgViewModelFactory
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
 
 /**
  * MainViewModel designed to store and manage UI-related data in a lifecycle conscious way. This
@@ -42,95 +46,100 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
     }
 
     /**
-     * Request a snackbar to display a string.
+     * 스낵바에 문자열 표시 요청
      *
-     * This variable is private because we don't want to expose MutableLiveData
-     *
-     * MutableLiveData allows anyone to set a value, and MainViewModel is the only
-     * class that should be setting values.
+     * 외부에서 참조 불가
+     * 내부에서만 값 설정 가능
      */
     private val _snackBar = MutableLiveData<String?>()
 
-    /**
-     * Request a snackbar to display a string.
-     */
+    // get _snackBar 불변
     val snackbar: LiveData<String?>
         get() = _snackBar
 
-    /**
-     * Update title text via this LiveData
-     */
+    // LiveData 타이틀
     val title = repository.title
 
+    // 위와 동일, 스피너 표시 여부
     private val _spinner = MutableLiveData<Boolean>(false)
-
-    /**
-     * Show a loading spinner if true
-     */
     val spinner: LiveData<Boolean>
         get() = _spinner
 
-    /**
-     * Count of taps on the screen
-     */
+    // 화면 클릭 한 횟수
     private var tapCount = 0
 
-    /**
-     * LiveData with formatted tap count.
-     */
+    // 위와 동일, "${탭 횟수} taps"
     private val _taps = MutableLiveData<String>("$tapCount taps")
-
-    /**
-     * Public view of tap live data.
-     */
     val taps: LiveData<String>
         get() = _taps
 
     /**
-     * Respond to onClick events by refreshing the title.
-     *
-     * The loading spinner will display until a result is returned, and errors will trigger
-     * a snackbar.
+     * 화면 클릭 이벤트 핸들링
+     * title refresh + tap count 증가
      */
     fun onMainViewClicked() {
         refreshTitle()
         updateTaps()
     }
 
-    /**
-     * Wait one second then update the tap count.
-     */
+    // 잠깐 delay 후 탭 횟수 증가
     private fun updateTaps() {
-        // TODO: Convert updateTaps to use coroutines
-        tapCount++
-        BACKGROUND.submit {
-            Thread.sleep(1_000)
-            _taps.postValue("${tapCount} taps")
+//        tapCount++
+//        BACKGROUND.submit {
+//            Log.d("asdf", Thread.currentThread().name) //  pool-3-thread-1 ,  pool-3-thread-2
+//            Thread.sleep(1_000)
+//            _taps.postValue("$tapCount taps")
+//        }
+
+//        tapCount++
+//        Log.d("asdf", Thread.currentThread().name) // main
+//        Thread.sleep(1_000)
+//        _taps.postValue("$tapCount taps")
+
+        viewModelScope.launch {
+            tapCount++
+            Log.d("asdf", "$tapCount") // main
+            Log.d("asdf", Thread.currentThread().name) // main
+            delay(1000)
+            _taps.postValue("$tapCount taps")
         }
     }
 
-    /**
-     * Called immediately after the UI shows the snackbar.
-     */
+    // UI에 스낵바가 표시된 직후에 호출. 스낵바 내림
     fun onSnackbarShown() {
         _snackBar.value = null
     }
 
     /**
+     * Title 새로고침
+     * title refresh callback 정의 / interface TitleRefreshCallback object 구현
+     * onCompleted - 성공 시 스피너 숨김
+     * onError - 오류 발생 시 스피너 숨김 + 스낵바(error 메세지가 포함 된) 표시
      * Refresh the title, showing a loading spinner while it refreshes and errors via snackbar.
      */
     fun refreshTitle() {
         // TODO: Convert refreshTitle to use coroutines
-        _spinner.value = true
-        repository.refreshTitleWithCallbacks(object : TitleRefreshCallback {
-            override fun onCompleted() {
-                _spinner.postValue(false)
+        viewModelScope.launch {
+            try {
+                _spinner.value = true
+                repository.refreshTitle()
+            } catch (error: TitleRefreshError) {
+                _snackBar.value = error.message
+            } finally {
+                _spinner.value = false
             }
+        }
 
-            override fun onError(cause: Throwable) {
-                _snackBar.postValue(cause.message)
-                _spinner.postValue(false)
-            }
-        })
+//        _spinner.value = true
+//        repository.refreshTitleWithCallbacks(object : TitleRefreshCallback {
+//            override fun onCompleted() {
+//                _spinner.postValue(false)
+//            }
+//
+//            override fun onError(cause: Throwable) {
+//                _snackBar.postValue(cause.message)
+//                _spinner.postValue(false)
+//            }
+//        })
     }
 }

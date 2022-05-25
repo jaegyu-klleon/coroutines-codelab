@@ -19,6 +19,8 @@ package com.example.android.kotlincoroutines.main
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
 import com.example.android.kotlincoroutines.util.BACKGROUND
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 /**
  * TitleRepository provides an interface to fetch a title or request a new one be generated.
@@ -43,6 +45,27 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
 
 
     // TODO: Add coroutines-based `fun refreshTitle` here
+    suspend fun refreshTitle() {
+        // interact with *blocking* network and IO calls from a coroutine
+        withContext(Dispatchers.IO) {
+            val result = try {
+                // Make network request using a blocking call
+                network.fetchNextTitle().execute()
+            } catch (cause: Throwable) {
+                // If the network throws an exception, inform the caller
+                throw TitleRefreshError("Unable to refresh title", cause)
+            }
+
+            if (result.isSuccessful) {
+                // Save it to database
+                titleDao.insertTitle(Title(result.body()!!))
+            } else {
+                // If it's not successful, inform the callback of the error
+                throw TitleRefreshError("Unable to refresh title", null)
+            }
+        }
+    }
+
 
     /**
      * Refresh the current title and save the results to the offline cache.
@@ -51,23 +74,23 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
      * the current tile.
      */
     fun refreshTitleWithCallbacks(titleRefreshCallback: TitleRefreshCallback) {
-        // This request will be run on a background thread by retrofit
+        // 이 요청은 retrofit에 의해 백그라운드에서 실행
         BACKGROUND.submit {
             try {
-                // Make network request using a blocking call
+                // blocking call 사용해서 네트워크 요청 생성
                 val result = network.fetchNextTitle().execute()
                 if (result.isSuccessful) {
-                    // Save it to database
+                    // 성공하면 DB에 저장
                     titleDao.insertTitle(Title(result.body()!!))
-                    // Inform the caller the refresh is completed
+                    // 호출자에게 새로고침 완료됨을 알림
                     titleRefreshCallback.onCompleted()
                 } else {
-                    // If it's not successful, inform the callback of the error
+                    // 오류 발생 시 콜백
                     titleRefreshCallback.onError(
                             TitleRefreshError("Unable to refresh title", null))
                 }
             } catch (cause: Throwable) {
-                // If anything throws an exception, inform the caller
+                // 모든 예외 처리
                 titleRefreshCallback.onError(
                         TitleRefreshError("Unable to refresh title", cause))
             }

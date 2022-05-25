@@ -26,9 +26,6 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.android.kotlincoroutines.R
 import com.google.android.material.snackbar.Snackbar
 
-/**
- * Show layout.activity_main and setup data binding.
- */
 class MainActivity : AppCompatActivity() {
 
     /**
