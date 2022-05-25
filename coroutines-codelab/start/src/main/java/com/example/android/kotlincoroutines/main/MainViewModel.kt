@@ -99,7 +99,7 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
         viewModelScope.launch {
             tapCount++
             Log.d("asdf", "$tapCount") // main
-            Log.d("asdf", Thread.currentThread().name) // main
+            Log.d("asdf", "updateTaps 안 쓰레드 이름 ${Thread.currentThread().name}") // main
             delay(1000)
             _taps.postValue("$tapCount taps")
         }

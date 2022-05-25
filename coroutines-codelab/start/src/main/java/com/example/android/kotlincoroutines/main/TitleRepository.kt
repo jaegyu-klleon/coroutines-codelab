@@ -16,6 +16,7 @@
 
 package com.example.android.kotlincoroutines.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
 import com.example.android.kotlincoroutines.util.BACKGROUND
@@ -46,21 +47,18 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
 
     // TODO: Add coroutines-based `fun refreshTitle` here
     suspend fun refreshTitle() {
-        // interact with *blocking* network and IO calls from a coroutine
+        // 새로운 코루틴 실행
         withContext(Dispatchers.IO) {
+            Log.d("asdf", Thread.currentThread().name)
             val result = try {
-                // Make network request using a blocking call
                 network.fetchNextTitle().execute()
             } catch (cause: Throwable) {
-                // If the network throws an exception, inform the caller
                 throw TitleRefreshError("Unable to refresh title", cause)
             }
 
             if (result.isSuccessful) {
-                // Save it to database
                 titleDao.insertTitle(Title(result.body()!!))
             } else {
-                // If it's not successful, inform the callback of the error
                 throw TitleRefreshError("Unable to refresh title", null)
             }
         }
@@ -77,7 +75,7 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
         // 이 요청은 retrofit에 의해 백그라운드에서 실행
         BACKGROUND.submit {
             try {
-                // blocking call 사용해서 네트워크 요청 생성
+                // 네트워크 요청 생성 (blocking call)
                 val result = network.fetchNextTitle().execute()
                 if (result.isSuccessful) {
                     // 성공하면 DB에 저장
@@ -87,12 +85,14 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
                 } else {
                     // 오류 발생 시 콜백
                     titleRefreshCallback.onError(
-                            TitleRefreshError("Unable to refresh title", null))
+                        TitleRefreshError("Unable to refresh title", null)
+                    )
                 }
             } catch (cause: Throwable) {
                 // 모든 예외 처리
                 titleRefreshCallback.onError(
-                        TitleRefreshError("Unable to refresh title", cause))
+                    TitleRefreshError("Unable to refresh title", cause)
+                )
             }
         }
     }
