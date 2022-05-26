@@ -19,7 +19,6 @@ package com.example.android.kotlincoroutines.main
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.map
-import com.example.android.kotlincoroutines.util.BACKGROUND
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -50,16 +49,11 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
         // 새로운 코루틴 실행
         withContext(Dispatchers.IO) {
             Log.d("asdf", Thread.currentThread().name)
-            val result = try {
-                network.fetchNextTitle().execute()
+            try {
+                val result = network.fetchNextTitle()
+                titleDao.insertTitle(Title(result))
             } catch (cause: Throwable) {
                 throw TitleRefreshError("Unable to refresh title", cause)
-            }
-
-            if (result.isSuccessful) {
-                titleDao.insertTitle(Title(result.body()!!))
-            } else {
-                throw TitleRefreshError("Unable to refresh title", null)
             }
         }
     }
@@ -71,31 +65,31 @@ class TitleRepository(val network: MainNetwork, val titleDao: TitleDao) {
      * This method does not return the new title. Use [TitleRepository.title] to observe
      * the current tile.
      */
-    fun refreshTitleWithCallbacks(titleRefreshCallback: TitleRefreshCallback) {
-        // 이 요청은 retrofit에 의해 백그라운드에서 실행
-        BACKGROUND.submit {
-            try {
-                // 네트워크 요청 생성 (blocking call)
-                val result = network.fetchNextTitle().execute()
-                if (result.isSuccessful) {
-                    // 성공하면 DB에 저장
-                    titleDao.insertTitle(Title(result.body()!!))
-                    // 호출자에게 새로고침 완료됨을 알림
-                    titleRefreshCallback.onCompleted()
-                } else {
-                    // 오류 발생 시 콜백
-                    titleRefreshCallback.onError(
-                        TitleRefreshError("Unable to refresh title", null)
-                    )
-                }
-            } catch (cause: Throwable) {
-                // 모든 예외 처리
-                titleRefreshCallback.onError(
-                    TitleRefreshError("Unable to refresh title", cause)
-                )
-            }
-        }
-    }
+//    fun refreshTitleWithCallbacks(titleRefreshCallback: TitleRefreshCallback) {
+//        // 이 요청은 retrofit에 의해 백그라운드에서 실행
+//        BACKGROUND.submit {
+//            try {
+//                // 네트워크 요청 생성 (blocking call)
+//                val result = network.fetchNextTitle().execute()
+//                if (result.isSuccessful) {
+//                    // 성공하면 DB에 저장
+//                    titleDao.insertTitle(Title(result.body()!!))
+//                    // 호출자에게 새로고침 완료됨을 알림
+//                    titleRefreshCallback.onCompleted()
+//                } else {
+//                    // 오류 발생 시 콜백
+//                    titleRefreshCallback.onError(
+//                        TitleRefreshError("Unable to refresh title", null)
+//                    )
+//                }
+//            } catch (cause: Throwable) {
+//                // 모든 예외 처리
+//                titleRefreshCallback.onError(
+//                    TitleRefreshError("Unable to refresh title", cause)
+//                )
+//            }
+//        }
+//    }
 }
 
 /**

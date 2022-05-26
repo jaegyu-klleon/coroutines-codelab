@@ -16,12 +16,12 @@
 
 package com.example.android.kotlincoroutines.main
 
-import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.android.kotlincoroutines.util.singleArgViewModelFactory
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -82,6 +82,17 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
         updateTaps()
     }
 
+
+    // Dispatcher.MAIN
+    private fun tapClick() {
+        viewModelScope.launch {
+            tapCount++
+            delay(1000)
+            _taps.postValue("$tapCount taps")
+        }
+    }
+
+
     // 잠깐 delay 후 탭 횟수 증가
     private fun updateTaps() {
 //        tapCount++
@@ -95,14 +106,21 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
 //        Log.d("asdf", Thread.currentThread().name) // main
 //        Thread.sleep(1_000)
 //        _taps.postValue("$tapCount taps")
+//        Log.d("asdf", "Thread : ${Thread.currentThread().name}") // main
 
         viewModelScope.launch {
+//            Log.d("asdf", "launch 시작 Thread : ${Thread.currentThread().name}") // main
             tapCount++
-            Log.d("asdf", "$tapCount") // main
-            Log.d("asdf", "updateTaps 안 쓰레드 이름 ${Thread.currentThread().name}") // main
+//            Log.d("asdf", "$tapCount") // main
             delay(1000)
             _taps.postValue("$tapCount taps")
+//            Log.d("asdf", "delay 완료")
         }
+//        var count = 0
+//        repeat(10) {
+//            Log.d("asdf", "${count++}, Thread : ${Thread.currentThread().name}")
+//            Thread.sleep(1000)
+//        }
     }
 
     // UI에 스낵바가 표시된 직후에 호출. 스낵바 내림
@@ -118,17 +136,20 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
      * Refresh the title, showing a loading spinner while it refreshes and errors via snackbar.
      */
     fun refreshTitle() {
-        // TODO: Convert refreshTitle to use coroutines
-        viewModelScope.launch {
-            try {
-                _spinner.value = true
-                repository.refreshTitle()
-            } catch (error: TitleRefreshError) {
-                _snackBar.value = error.message
-            } finally {
-                _spinner.value = false
-            }
+        launchDataLoad {
+            repository.refreshTitle()
         }
+
+//        viewModelScope.launch {
+//            try {
+//                _spinner.value = true
+//                repository.refreshTitle()
+//            } catch (error: TitleRefreshError) {
+//                _snackBar.value = error.message
+//            } finally {
+//                _spinner.value = false
+//            }
+//        }
 
 //        _spinner.value = true
 //        repository.refreshTitleWithCallbacks(object : TitleRefreshCallback {
@@ -141,5 +162,19 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
 //                _spinner.postValue(false)
 //            }
 //        })
+    }
+
+
+    private fun launchDataLoad(block: suspend () -> Unit): Job {
+        return viewModelScope.launch {
+            try {
+                _spinner.value = true
+                block()
+            } catch (error: TitleRefreshError) {
+                _snackBar.value = error.message
+            } finally {
+                _spinner.value = false
+            }
+        }
     }
 }
