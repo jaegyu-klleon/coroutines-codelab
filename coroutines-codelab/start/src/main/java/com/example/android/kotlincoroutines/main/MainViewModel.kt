@@ -79,7 +79,7 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
      * title refresh + tap count 증가
      */
     fun onMainViewClicked() {
-        refreshTitle()
+//        refreshTitle()
         updateTaps()
     }
 
@@ -93,56 +93,97 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
         }
     }
 
+    val TAG = "asdf"
 
     // 잠깐 delay 후 탭 횟수 증가
     private fun updateTaps() {
 
-//        예시
-//        tapCount++
-//        BACKGROUND.submit {
-//            Log.d("asdf", Thread.currentThread().name) //  pool-3-thread-1 ,  pool-3-thread-2
-//            Thread.sleep(1_000)
+////        예시
+////        tapCount++
+////        BACKGROUND.submit {
+////            Log.d("asdf", Thread.currentThread().name) //  pool-3-thread-1 ,  pool-3-thread-2
+////            Thread.sleep(1_000)
+////            _taps.postValue("$tapCount taps")
+////        }
+//
+////        Log.d("asdf", Thread.currentThread().name) // main
+////        Thread.sleep(1_000)
+////        _taps.postValue("$tapCount taps")
+////        Log.d("asdf", "Thread : ${Thread.currentThread().name}") // main
+//
+//        viewModelScope.launch {
+//            Log.d("asdf", "launch 시작 Thread : ${Thread.currentThread().name}") // main
+//            tapCount++
+//            Log.d("asdf", "$tapCount") // main
+////            Thread.sleep(1_000)
+////            delay(1000) 뺀거 한번 넣은거 한번.
 //            _taps.postValue("$tapCount taps")
+////            Log.d("asdf", "delay 완료")
 //        }
-
-        tapCount++
+//
 //        Log.d("asdf", Thread.currentThread().name) // main
-//        Thread.sleep(1_000)
-        _taps.postValue("$tapCount taps")
+////        Thread.sleep(1_000)
+//        _taps.postValue("$tapCount taps")
 //        Log.d("asdf", "Thread : ${Thread.currentThread().name}") // main
 
-        viewModelScope.launch {
-//            Log.d("asdf", "launch 시작 Thread : ${Thread.currentThread().name}") // main
-            tapCount++
-//            Log.d("asdf", "$tapCount") // main
-//            Thread.sleep(1_000)
-//            delay(1000) 뺀거 한번 넣은거 한번.
-            _taps.postValue("$tapCount taps")
-//            Log.d("asdf", "delay 완료")
+        Log.d(TAG, "화면 클릭 Thread : ${Thread.currentThread().name}") // main
+        tapCount++
+        _taps.postValue("$tapCount taps")
+
+
+        viewModelScope.launch() {
+//            Log.d(TAG, "1")
+//            val answer1 = networkCall() //3초 딜레이
+//            Log.d(TAG, "2")
+//            val answer2 = networkCall2()// 3초딜레이
+//            Log.d(TAG, "3")
+//            Log.d(TAG, "Answer1 is $answer1")
+//            Log.d(TAG, "Answer2 is $answer2")
+
+//            val time = measureTimeMillis {
+                Log.d(TAG, "1 : ${Thread.currentThread().name}") // main
+                val answer1 = networkCall() //3초 딜레이
+                Log.d(TAG, "2 : ${Thread.currentThread().name}") // main
+                val answer2 = networkCall2()// 3초딜레이
+                Log.d(TAG, "3 : ${Thread.currentThread().name}") // main
+                Log.d(TAG, "Answer1 is $answer1")
+                Log.d(TAG, "Answer2 is $answer2")
+//            }
+//            Log.d(TAG, "Requests took $time ms.") //0 6초
+
+
+//            val time = measureTimeMillis {
+//                var answer1: String? = null
+//                var answer2: String? = null
+//
+//                Log.d(TAG, "1")
+//                val job1 = launch { answer1 = networkCall() }
+//                Log.d(TAG, "2")
+//                val job2 = launch { answer2 = networkCall2() }
+//                Log.d(TAG, "3")
+//
+//                job1.join()
+//                job2.join()
+//
+//                Log.d(TAG, "Answer1 is $answer1")
+//                Log.d(TAG, "Answer2 is $answer2")
+//            }
+//            Log.d(TAG, "Requests took $time ms.") //0 6초
+
         }
 
-        tapCount++
-//        Log.d("asdf", Thread.currentThread().name) // main
-//        Thread.sleep(1_000)
-        _taps.postValue("$tapCount taps")
-        Log.d("asdf", "Thread : ${Thread.currentThread().name}") // main
 
     }
 
-    /**
-     * 메인쓰레드 타고 와서 딜레이도 메인 스레드.
-     * 메인스레드에서 코루틴을 쓸 일이 있나?
-     *
-     * 있을 것 같다.
-     * 화면 관련 코루틴
-     *
-     *
-     *
-     *
-     *
-     *
-     *
-     */
+    suspend fun networkCall(): String {
+        delay(3000L)
+        return "Answer 1"
+    }
+
+    suspend fun networkCall2(): String {
+        delay(3000L)
+        return "Answer 2"
+    }
 
     // UI에 스낵바가 표시된 직후에 호출. 스낵바 내림
     fun onSnackbarShown() {
@@ -161,16 +202,6 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
             repository.refreshTitle()
         }
 
-//        viewModelScope.launch {
-//            try {
-//                _spinner.value = true
-//                repository.refreshTitle()
-//            } catch (error: TitleRefreshError) {
-//                _snackBar.value = error.message
-//            } finally {
-//                _spinner.value = false
-//            }
-//        }
 
 //        _spinner.value = true
 //        repository.refreshTitleWithCallbacks(object : TitleRefreshCallback {
@@ -187,10 +218,21 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
 
 
     private fun launchDataLoad(suspendFuction: suspend () -> Unit): Job {
+//        return viewModelScope.launch {
+//            try {
+//                _spinner.value = true
+//                suspendFuction()
+//            } catch (error: TitleRefreshError) {
+//                _snackBar.value = error.message
+//            } finally {
+//                _spinner.value = false
+//            }
+//        }
+
         return viewModelScope.launch {
             try {
                 _spinner.value = true
-                suspendFuction()
+                repository.refreshTitle()
             } catch (error: TitleRefreshError) {
                 _snackBar.value = error.message
             } finally {
