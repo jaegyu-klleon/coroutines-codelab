@@ -16,6 +16,7 @@
 
 package com.example.android.kotlincoroutines.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -95,6 +96,8 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
 
     // 잠깐 delay 후 탭 횟수 증가
     private fun updateTaps() {
+
+//        예시
 //        tapCount++
 //        BACKGROUND.submit {
 //            Log.d("asdf", Thread.currentThread().name) //  pool-3-thread-1 ,  pool-3-thread-2
@@ -102,26 +105,44 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
 //            _taps.postValue("$tapCount taps")
 //        }
 
-//        tapCount++
+        tapCount++
 //        Log.d("asdf", Thread.currentThread().name) // main
 //        Thread.sleep(1_000)
-//        _taps.postValue("$tapCount taps")
+        _taps.postValue("$tapCount taps")
 //        Log.d("asdf", "Thread : ${Thread.currentThread().name}") // main
 
         viewModelScope.launch {
 //            Log.d("asdf", "launch 시작 Thread : ${Thread.currentThread().name}") // main
             tapCount++
 //            Log.d("asdf", "$tapCount") // main
-            delay(1000)
+//            Thread.sleep(1_000)
+//            delay(1000) 뺀거 한번 넣은거 한번.
             _taps.postValue("$tapCount taps")
 //            Log.d("asdf", "delay 완료")
         }
-//        var count = 0
-//        repeat(10) {
-//            Log.d("asdf", "${count++}, Thread : ${Thread.currentThread().name}")
-//            Thread.sleep(1000)
-//        }
+
+        tapCount++
+//        Log.d("asdf", Thread.currentThread().name) // main
+//        Thread.sleep(1_000)
+        _taps.postValue("$tapCount taps")
+        Log.d("asdf", "Thread : ${Thread.currentThread().name}") // main
+
     }
+
+    /**
+     * 메인쓰레드 타고 와서 딜레이도 메인 스레드.
+     * 메인스레드에서 코루틴을 쓸 일이 있나?
+     *
+     * 있을 것 같다.
+     * 화면 관련 코루틴
+     *
+     *
+     *
+     *
+     *
+     *
+     *
+     */
 
     // UI에 스낵바가 표시된 직후에 호출. 스낵바 내림
     fun onSnackbarShown() {
@@ -165,11 +186,11 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
     }
 
 
-    private fun launchDataLoad(block: suspend () -> Unit): Job {
+    private fun launchDataLoad(suspendFuction: suspend () -> Unit): Job {
         return viewModelScope.launch {
             try {
                 _spinner.value = true
-                block()
+                suspendFuction()
             } catch (error: TitleRefreshError) {
                 _snackBar.value = error.message
             } finally {
@@ -178,3 +199,47 @@ class MainViewModel(private val repository: TitleRepository) : ViewModel() {
         }
     }
 }
+
+/**
+ * 서버 api 콜
+ * 먼저 오는 순서대로
+ *
+ * IO 스레드가 같으면 나머지 대기 하냐
+ * 디스패처
+ *
+ */
+
+//fun startWithoutJoin() {
+//    runBlocking {
+//        println("runBlocking start")
+//        val job1 = launch(Dispatcher.IO) {
+//            // thread name
+//            delay(1000)
+//            println("1 Launch start")
+//        }
+//        val job2 = launch(Dispatcher.IO) {
+//            println("2 Launch start")
+//        }
+//        val job3 = launch {
+//            println("3 Launch start")
+//        }
+//
+//        java.lang.Thread.sleep(1000)
+//        println("runBlocking end")
+//    }
+//}
+//
+//fun startWithYield() {
+//    runBlocking {
+//        println("runBlocking start")
+//        launch(Dispatchers.IO) {
+//            repeat(3) {
+//                println("Launch start")
+//                // yield()   // This is not needed anymore
+//            }
+//        }
+//        yield()
+//        println("runBlocking end")
+//    }
+//}
+
